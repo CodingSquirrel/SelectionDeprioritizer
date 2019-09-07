@@ -3,6 +3,9 @@
 -- starts enabled or not?
 local isEnabled = true
 
+-- filter all assisters or not?
+local filterAssisters = true
+
 -- filter by domain or not?
 local filterDomains = true
 local domainCategories = { "NAVAL", "LAND", "AIR" }
@@ -151,18 +154,21 @@ end
 
 function filterToRegulars(units)
 	local filtered = {}
+	local changed = false
 	for id, unit in units do
 		local isEx = isExotic(unit)
 		local isExAs = isExoticAssist(unit)
 		if isExAs then
-		  isExAs = isAssisting(unit)
-	  end
+			isExAs = isAssisting(unit)
+		end
 		
 		if not isEx and not isExAs then
-				table.insert(filtered, unit)
+			table.insert(filtered, unit)
+		else
+			changed = true
 		end
 	end
-	return filtered
+	return filtered, changed
 end
 
 
@@ -209,72 +215,142 @@ end
 
 function filterToDomain(units, requiredDomain)
 	local filtered = {}
+	local changed = false
 	for id, unit in units do
 		local domain = getDomain(unit)
 		if domain == requiredDomain then
 			table.insert(filtered, unit)
+		else
+			changed = true
 		end
 	end
-	return filtered
+	return filtered, changed
 end
 
 
-local suppress = false
-function OnSelectionChanged(oldSelection, newSelection, added, removed)
+local dblClickStart = false
+local dblClickUnit = nil
+function isDoubleclick(selection)
+	-- a double click is if
+	--   the first click is just one unit
+	--   and the second click contains the same unit
 
-	if not isEnabled then 
-		return false
+	local result = false
+	if dblClickStart then
+		dblClickStart = false
+		for index, unit in selection do
+			if unit == dblClickUnit then
+				Log("Double Click")
+				result = true
+			end
+		end
 	end
+
+	dblClickStart = table.getn(selection) == 1
+	if dblClickStart then
+		Log("Double Click start?")
+		for index, unit in selection do
+			dblClickUnit = unit
+		end
+	end
+
+	return result
+end
+
+
+function filterToNonAssisters(selection)
+	local changed = false
+	local filtered = {}
+
+	-- if its a double click on an assister, select all fellow assisters
+	if isDoubleclick(selection) and dblClickUnit:GetGuardedEntity() then
+		Log("-- double click detected")
+
+		for index, unit in selection do
+			local isSame = unit:GetGuardedEntity() == dblClickUnit:GetGuardedEntity()
+
+			if isSame then
+				Log("found a brother")
+				table.insert(filtered,unit)
+			else
+				changed = true
+				Log("didnt find brother")
+			end
+		end
+	else
+		if selection and table.getn(selection) > 1 then
+			local guardedUnit = selection[1]:GetGuardedEntity()
+			local allSame = true
+			for index, unit in selection do
+				if unit:GetGuardedEntity() then
+					Log("found assister")
+					if unit:GetGuardedEntity() != guardedUnit then
+						allSame = false
+					end
+					changed = true
+				else
+					allSame = false
+					Log("not an assister")
+					table.insert(filtered,unit)
+				end
+			end
+
+			if allSame then
+				changed = false
+			end
+		end
+	end
+
+	if changed then
+		return filtered, changed
+	else
+		return selection, false
+	end
+end
+
+
+
+function Deselect(selection)
 
 	if IsKeyDown('Shift') then
-		return false
+		return selection, false
 	end
 
-	-- prevent inifite recursion
-	if suppress then 
-		Log("--OnSelectionChanged supressed")
-		return false
-	end
-
-	Log("--OnSelectionChanged")
-
-	local changesMade = false
+	local changed, domainChanged, exoticChanged, assistersChanged
 
 	if filterDomains then 
-		local domains = getDomains(newSelection)
+		local domains = getDomains(selection)
 		if domains.isMixed then
-			Log("Mixed")
+			Log("Mixed Domains")
 			domain = getFirstDomain(domains)
 			if domain ~= nil then 
 				Log("limit to " .. domain)
-				newSelection = filterToDomain(newSelection, domain)
-				changesMade = true
+				selection, domainChanged = filterToDomain(selection, domain)
 			end
 		else
-			Log("notmixed")
+			Log("Not Mixed Domains")
 		end
 	end
 
 
 	if filterExotics then
-		local isMixedExotic = isMixedExoticness(newSelection)
-		if isMixedExotic then 
-			newSelection = filterToRegulars(newSelection)
-			changesMade = true
+		local isMixedExotic = isMixedExoticness(selection)
+		if isMixedExotic then
+			Log("Mixed Exotic")
+			selection, exoticChanged = filterToRegulars(selection)
+		else
+			Log("Not Mixed Exotic")
 		end
 	end
-	
-	if changesMade then 
-		ForkThread(function() 
-			suppress = true
-			Log("--changing")
-			SelectUnits(oldSelection)
-			SelectUnits(newSelection)
-			suppress = false
-		end)	
+
+	if filterAssisters then
+		Log("Filter Assisters")
+		selection, assistersChanged = filterToNonAssisters(selection)
 	end
 
-	return changesMade
+	changed = domainChanged or exoticChanged or assistersChanged
+
+	return selection, changed
 end
 
 
