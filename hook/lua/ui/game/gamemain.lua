@@ -15,7 +15,6 @@ function DeselectSelens(selection)
 		gets fixed, remove the call here.
 	]]
 	if oldChanged or changed then
-		LOG("changing selection to " .. repr(newSelection))
 		SelectUnits(newSelection)
 		return newSelection, oldChanged or changed
 	end
