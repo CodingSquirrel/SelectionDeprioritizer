@@ -1,5 +1,5 @@
-name = "Selection Deprioritizer V4.2"
-version = 4.2
+name = "Selection Deprioritizer"
+version = 5
 copyright = "nah"
 description = "Prevents accidental selection of things like mobile T3 artillery. Reduces selection to domains. Deselects assisting shields and scouts. Edited by SpoCk0nd0pe and CodingSquirrel."
 author = "partytime"
