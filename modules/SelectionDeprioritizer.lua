@@ -1,85 +1,12 @@
-## config 
+local savedPrefs = nil
+local isEnabled = true			-- starts enabled or not?
+local filterAssisters = true	-- filter all assisters or not?
+local filterDomains = true		-- filter by domain or not?
+local filterExotics = true		-- filter by exotics or not?
 
--- starts enabled or not?
-local isEnabled = true
-
--- filter all assisters or not?
-local filterAssisters = true
-
--- filter by domain or not?
-local filterDomains = true
 local domainCategories = { "NAVAL", "LAND", "AIR" }
-
--- filter by exotics or not?
-local filterExotics = true
-local exoticBlueprintIds = { 
-
-	"xrl0302", -- fire beetle
-
-	"ual0304", -- Serenity
-	"url0304", -- Trebuchet
-	"xsl0304", -- Suthanus
-	"uel0304", -- Demolisher
-	"dal0310", -- Absolver
-	"xel0306", -- Spearhead
-
-	"xal0305", -- Sprite Striker
-	"xsl0305", -- Usha-Ah
-
-	"dra0202", -- Corsair
-	"daa0206", -- Mercy
-
-	-- torp bombers
-	"uaa0204", -- Skimmer
-	"ura0204", -- Cormorant
-	"xsa0204", -- Uosioz
-	"uea0204", -- Stork
-	"xaa0306", -- Solace
-
-	-- strat bombers
-	"uaa0304", -- Shocker
-	"ura0304", -- Revenant
-	"xsa0304", -- Sinntha
-	"uea0304", -- Ambassador
-
-	-- aircraft carriers
-	"uas0303", -- Keefer Class
-	"urs0303", -- Command Class
-	"xss0303", -- Iavish
-
-	-- strat subs
-	"uas0304", -- Silencer
-	"urs0304", -- Plan B
-	"ues0304", -- Ace
-
-	-- missile ship
-	"xas0306", -- Torrent Class
-
-	-- t3 sonar
-	"uas0305", -- aeon
-	"urs0305", -- Flood XR
-	"ues0305" -- SP3 - 3000
- } 
-
- local exoticAssistBlueprintIds = { 
-    -- t1 scouts
-	"ual0101", --Spirit
-	"url0101", --Mole
-	"xsl0101", --Selen
-	"uel0101", --Snoop
-	
-    -- mobile shields
-    "xsl0307", --Athanah
-	"uel0307", --Parashield
-	"ual0307", --Asylum
-	
-	"url0306" --Deceiver
- } 
- 
-## end config
-
-
-
+local exoticBlueprintIds = {} 
+local exoticAssistBlueprintIds = {}
 
 
 local logEnabled = false
@@ -92,19 +19,33 @@ end
 
 Log("Selection Deprioriziter Initializing..")
 
-function ToggleEnabled()
-	isEnabled = not isEnabled
 
-	if isEnabled then
-		print("Selection Deprioriziter - ENABLED")
-	else
-		print("Selection Deprioriziter - DISABLED")
-	end
+function setExoticBlueprintIds(ids)
+	exoticBlueprintIds = ids
 end
- 
+
+
+function setExoticAssistBlueprintIds(ids)
+	exoticAssistBlueprintIds = ids
+end
+
+
+function setDomainCategories(cats)
+	domainCategories = cats
+end
+
+
+function setSavedPrefs(prefs, verbose)
+	savedPrefs = prefs
+	isEnabled = savedPrefs['General']['isEnabled']
+	filterAssisters = savedPrefs['General']['filterAssisters'] and isEnabled
+	filterDomains = savedPrefs['General']['filterDomains'] and isEnabled
+	filterExotics = savedPrefs['General']['filterExotics'] and isEnabled
+end
+
 
 function arrayContains(arr, val)
-	for i, v in ipairs(arr) do
+	for _, v in ipairs(arr) do
 		if v == val then 
 			return true
 		end
@@ -309,7 +250,6 @@ function filterToNonAssisters(selection)
 end
 
 
-
 function Deselect(selection)
 
 	if IsKeyDown('Shift') then
@@ -332,7 +272,6 @@ function Deselect(selection)
 		end
 	end
 
-
 	if filterExotics then
 		local isMixedExotic = isMixedExoticness(selection)
 		if isMixedExotic then
@@ -351,6 +290,16 @@ function Deselect(selection)
 	changed = domainChanged or exoticChanged or assistersChanged
 
 	return selection, changed
+end
+
+
+function init()
+	local KeyMapper = import('/lua/keymap/keymapper.lua')
+	KeyMapper.SetUserKeyAction('Toggle Selection Deprioritizer', {
+		action = "UI_Lua import('/mods/SelectionDeprioritizer/modules/SelectionDeprioritizer.lua').ToggleEnabled()",
+		category = 'Mods',
+		order = 1,
+	})
 end
 
 

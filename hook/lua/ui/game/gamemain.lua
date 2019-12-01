@@ -1,6 +1,7 @@
 local SelectionDeprioritizer = import('/mods/SelectionDeprioritizer/modules/SelectionDeprioritizer.lua')
 local Selection = import('/lua/ui/game/selection.lua')
 
+
 local oldDeselectSelens = DeselectSelens
 function DeselectSelens(selection)
 
@@ -24,6 +25,8 @@ function DeselectSelens(selection)
 end
 
 
-local KeyMapper = import('/lua/keymap/keymapper.lua')
-KeyMapper.SetUserKeyAction('Toggle Selection Deprioritizer', {action = "UI_Lua import('/mods/SelectionDeprioritizer/modules/SelectionDeprioritizer.lua').ToggleEnabled()", category = 'Mods', order = 1,})
- 
+local oldCreateUI = CreateUI
+function CreateUI(isReplay) 
+	oldCreateUI(isReplay)
+	import('/mods/SelectionDeprioritizer/modules/SelectionDeprioritizerConfig.lua').init()
+end
