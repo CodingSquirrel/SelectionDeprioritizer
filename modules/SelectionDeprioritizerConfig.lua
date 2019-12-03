@@ -81,7 +81,7 @@ local defaults = {
         { key="filterExotics", 		type="bool",	default=true, 	name="Filter exotics", 		},
     }},
     { name = "Filter", settings = {
-        { key="Domains", 			type="choice",	default=0, 		name="Which domains to filter",	choices = {
+        { key="Domains", 			type="choice",	default=1, 		name="Which domains to filter",	choices = {
 			[1] = { key="NAVAL > LAND  > AIR", 		value = {"NAVAL", "LAND", "AIR"}},
 			[2] = { key="NAVAL > AIR   > LAND", 	value = {"NAVAL", "AIR", "LAND"}},
 			[3] = { key="LAND  > AIR   > NAVAL", 	value = {"LAND", "AIR", "NAVAL"}},
@@ -102,7 +102,8 @@ function savePreferences()
 	SelectionDeprioritizer.setExoticAssistBlueprintIds(exoticAssistBlueprintIds)
 	
 	-- set current domains categories
-	choice =  getByKey(getByKey(defaults, "name", "Filter").settings, "key", "Domains").choices[savedPrefs["Filter"]["Domains"]]
+	setting = getByKey(getByKey(defaults, "name", "Filter").settings, "key", "Domains")
+	choice = setting.choices[savedPrefs["Filter"]["Domains"]]
 	SelectionDeprioritizer.setDomainCategories(choice.value)
 end
 
